@@ -1,5 +1,3 @@
----
-
 # Simple Blockchain in Rust
 
 This is a basic implementation of a blockchain in Rust. It showcases the basic principles of blockchain: creating blocks with data, adding them to the blockchain, and ensuring the integrity and validity of the chain through a simple proof-of-work mechanism.
@@ -50,5 +48,3 @@ Here is a brief overview of the important parts of the code:
 - `Blockchain::add_block`: This function adds a block with given data to the blockchain.
 
 The `tests` module contains a simple test that demonstrates creating a blockchain and adding blocks to it.
-
----
