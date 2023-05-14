@@ -9,13 +9,13 @@ This is a basic implementation of a blockchain in Rust. It showcases the basic p
 2. Clone the repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/yourrepository.git
+git clone https://github.com/deepak-likes-code/rust-blockchain
 ```
 
 3. Navigate to the project directory and build the project:
 
 ```bash
-cd yourrepository
+cd rust_blockchain
 cargo build
 ```
 
