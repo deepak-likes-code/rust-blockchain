@@ -5,11 +5,12 @@ use colored::*;
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 use log::{debug, info};
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 pub const TARGET_HEX: usize = 4;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
     nonce: u32,
     height: usize,
@@ -40,6 +41,10 @@ impl Block {
 
     pub fn get_hash(&self) -> String {
         self.hash.clone()
+    }
+
+    pub fn get_prev_hash(&self) -> String {
+        self.prev_block_hash.clone()
     }
 
     fn proof_of_work(&mut self) -> Result<()> {
