@@ -1,14 +1,9 @@
 use super::*;
-
 use bincode::{deserialize, serialize};
 use colored::*;
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
-use env_logger::fmt::Color;
-use failure::format_err;
 use log::{debug, info};
-use sled;
-use std::collections::HashMap;
 use std::time::SystemTime;
 
 const TARGET_HEX: usize = 4;
@@ -16,7 +11,6 @@ pub type Result<T> = std::result::Result<T, failure::Error>;
 
 #[derive(Debug, Clone)]
 pub struct Block {
-    // index: i32,
     nonce: u32,
     height: usize,
     timestamp: u128,
@@ -37,7 +31,7 @@ impl Block {
             .as_millis();
 
         let mut block = Block {
-            timestamp: timestamp,
+            timestamp,
             nonce: 0,
             height,
             prev_block_hash,
