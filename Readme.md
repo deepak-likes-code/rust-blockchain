@@ -25,8 +25,16 @@ Currently, this project contains a test module that demonstrates the basic funct
 
 You can run this test using the command:
 
+You can create a block and add blocks by using
+
 ```bash
-cargo test
+cargo run addblock <DATA>
+```
+
+You can print all the blocks of the blockchain by using
+
+```bash
+cargo run printchain
 ```
 
 This will create a new blockchain, add a few blocks to it, and print out the blockchain's state.

@@ -1,6 +1,12 @@
 pub mod block;
+pub mod blockchain;
+pub mod cli;
+pub mod errors;
 
-fn main() {
-    println!("Hello, world!");
-    let u: Vec<i32> = vec![];
+use errors::Result;
+
+fn main() -> Result<()> {
+    let mut cli = cli::Cli::new()?;
+    cli.run()?;
+    Ok(())
 }
