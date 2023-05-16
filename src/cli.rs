@@ -46,10 +46,11 @@ impl Cli {
     }
 
     fn addblock(&mut self, data: String) -> Result<()> {
-        self.bc.add_block(data)
+        self.bc.add_block(vec![])
     }
 
     fn print_chain(&mut self) {
+        println!("{}", "Printing the blockchain".green());
         for block in &mut self.bc.iter() {
             println!("{}", format!("block: {:#?}", block).green())
         }
