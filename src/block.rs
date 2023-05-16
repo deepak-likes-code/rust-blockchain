@@ -1,5 +1,6 @@
 use super::*;
 use crate::errors::Result;
+use crate::transaction::Transaction;
 use bincode::{deserialize, serialize};
 use colored::*;
 use crypto::digest::Digest;
@@ -17,11 +18,15 @@ pub struct Block {
     timestamp: u128,
     hash: String,
     prev_block_hash: String,
-    transactions: String,
+    transactions: Vec<Transaction>,
 }
 
 impl Block {
-    pub fn new_block(data: String, prev_block_hash: String, height: usize) -> Result<Block> {
+    pub fn new_block(
+        data: Vec<Transaction>,
+        prev_block_hash: String,
+        height: usize,
+    ) -> Result<Block> {
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)?
             .as_millis();
@@ -72,8 +77,12 @@ impl Block {
         Ok(bytes)
     }
 
-    pub fn new_genesis_block() -> Block {
-        Block::new_block(String::from("Genesis Block"), String::new(), 0).unwrap()
+    pub fn new_genesis_block(coinbase: Transaction) -> Block {
+        Block::new_block(vec![coinbase], String::new(), 0).unwrap()
+    }
+
+    pub fn get_transaction(&self) -> &Vec<Transaction> {
+        &self.transactions
     }
 
     fn validate(&self) -> Result<bool> {
