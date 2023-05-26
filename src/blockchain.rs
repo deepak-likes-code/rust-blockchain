@@ -4,7 +4,8 @@ use log::info;
 
 use crate::block::{Block, TARGET_HEX};
 use crate::errors::Result;
-use crate::transaction::{TXOutput, Transaction};
+use crate::transaction::Transaction;
+use crate::txn::TXOutput;
 
 const GENESIS_COINBASE_DATA: &str =
     "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
@@ -21,30 +22,6 @@ pub struct BlockchainIter<'a> {
 }
 
 impl Blockchain {
-    //  pub fn new() -> Result<Blockchain> {
-    //     let db = sled::open("data/blocks")?;
-    //     match db.get("LAST")? {
-    //         Some(hash) => {
-    //             let lasthash = String::from_utf8(hash.to_vec())?;
-    //             Ok(Blockchain {
-    //                 db,
-    //                 current_hash: lasthash,
-    //             })
-    //         }
-    //         None => {
-    //             let block = Block::new_genesis_block();
-    //             db.insert(block.get_hash(), bincode::serialize(&block)?)?;
-    //             db.insert("LAST", block.get_hash().as_bytes())?;
-    //             let bc = Blockchain {
-    //                 current_hash: block.get_hash(),
-    //                 db,
-    //             };
-    //             bc.db.flush()?;
-    //             Ok(bc)
-    //         }
-    //     }
-    // }
-
     pub fn new() -> Result<Blockchain> {
         info!("open Blockchain");
         let db = sled::open("data/blocks")?;
@@ -208,10 +185,6 @@ mod tests {
     #[test]
     fn test_blockchain() {
         let mut b = Blockchain::new().unwrap();
-        // b.add_block("data".to_string());
-        // b.add_block("data2".to_string());
-        // b.add_block("data3".to_string());
-
         for item in b.iter() {
             println!("{:?}", item)
         }

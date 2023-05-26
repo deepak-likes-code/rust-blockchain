@@ -1,7 +1,8 @@
-use crate::blockchain::Blockchain;
 use crate::errors::Result;
 use crate::transaction::Transaction;
+use crate::{blockchain::Blockchain, wallet::Wallets};
 use clap::{arg, Command};
+use colored::Colorize;
 use std::process::exit;
 
 pub struct Cli {}
@@ -13,7 +14,7 @@ impl Cli {
     pub fn run(&mut self) -> Result<()> {
         let matches = Command::new("blockchain-rust-demo")
             .version("0.1")
-            .author("behrouz.r.fa@gmail.com")
+            .author("deepakkomma@gmail.com")
             .about("blockchain in rust: a simple blockchain for learning")
             .subcommand(Command::new("printchain").about("print all the chain blocks"))
             .subcommand(
@@ -33,6 +34,10 @@ impl Cli {
                     .arg(arg!(<TO>" 'Destination wallet address'"))
                     .arg(arg!(<AMOUNT>" 'Destination wallet address'")),
             )
+            .subcommand(Command::new("createwallet"))
+            .about("Creates a wallet")
+            .subcommand(Command::new("listaddresses"))
+            .about("Lists addresses")
             .get_matches();
 
         if let Some(ref matches) = matches.subcommand_matches("create") {
@@ -86,6 +91,22 @@ impl Cli {
 
         if let Some(_) = matches.subcommand_matches("printchain") {
             cmd_print_chain()?;
+        }
+
+        if let Some(_) = matches.subcommand_matches("createwallet") {
+            let mut ws = Wallets::new()?;
+            let address = ws.create_wallet();
+            ws.save_all()?;
+            println!("success:address {}", address)
+        }
+
+        if let Some(_) = matches.subcommand_matches("listaddresses") {
+            let ws = Wallets::new()?;
+            let addresses = ws.get_all_addresses();
+            println!("Addresses: ....");
+            for a in addresses {
+                println!("{}", a.green().bold())
+            }
         }
 
         Ok(())
