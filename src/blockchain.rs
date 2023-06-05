@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-
-use failure::format_err;
-use log::info;
-use sha2::digest::typenum::private::PrivateInvert;
-
 use crate::block::{Block, TARGET_HEX};
 use crate::errors::Result;
 use crate::transaction::Transaction;
-use crate::txn::TXOutput;
+use crate::txn::TXOutputs;
+use failure::format_err;
+use log::info;
+use std::collections::HashMap;
 
 const GENESIS_COINBASE_DATA: &str =
     "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
@@ -100,14 +97,41 @@ impl Blockchain {
         unspent_TXs
     }
 
-    pub fn find_UTXO(&self, address: &[u8]) -> Vec<TXOutput> {
-        let mut utxos = Vec::<TXOutput>::new();
-        let unspent_TXs = self.find_unspent_transaction(address);
+    pub fn find_UTXO(&self) -> HashMap<String, TXOutputs> {
+        let mut utxos: HashMap<String, TXOutputs> = HashMap::new();
+        let mut spent_txo: HashMap<String, Vec<i32>> = HashMap::new();
 
-        for tx in unspent_TXs {
-            for out in &tx.vout {
-                if out.can_be_unlock_with(address) {
-                    utxos.push(out.clone())
+        for block in self.iter() {
+            for tx in block.get_transaction() {
+                for index in 0..tx.vout.len() {
+                    if let Some(ids) = spent_txo.get(&tx.id) {
+                        if ids.contains(&(index as i32)) {
+                            continue;
+                        }
+                    }
+
+                    match utxos.get_mut(&tx.id) {
+                        Some(v) => v.outputs.push(tx.vout[index].clone()),
+
+                        None => {
+                            utxos.insert(
+                                tx.id.clone(),
+                                TXOutputs {
+                                    outputs: vec![tx.vout[index].clone()],
+                                },
+                            );
+                        }
+                    }
+                }
+                if !tx.is_coinbase() {
+                    for i in &tx.vin {
+                        match spent_txo.get_mut(&i.txid) {
+                            Some(v) => v.push(i.vout),
+                            None => {
+                                spent_txo.insert(i.txid.clone(), vec![i.vout]);
+                            }
+                        }
+                    }
                 }
             }
         }
