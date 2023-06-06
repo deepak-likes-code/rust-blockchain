@@ -39,6 +39,11 @@ impl Blockchain {
 
     pub fn create_blockchain(address: String) -> Result<Blockchain> {
         info!("Creating new blockchain");
+
+        if let Err(e) = std::fs::remove_dir_all("data/blocks") {
+            info!("There exists no blocks to delete")
+        }
+
         let db = sled::open("data/blocks")?;
         info!("Creating new block database");
         let cbtx = Transaction::new_coinbase(address, String::from(GENESIS_COINBASE_DATA))?;
@@ -170,36 +175,7 @@ impl Blockchain {
         tx.verify(prev_TXs)
     }
 
-    pub fn find_spendable_outputs(
-        &self,
-        address: &[u8],
-        amount: i32,
-    ) -> (i32, HashMap<String, Vec<i32>>) {
-        let mut unspent_outputs: HashMap<String, Vec<i32>> = HashMap::new();
-        let mut accumulated = 0;
-        let unspent_TXs = self.find_unspent_transaction(address);
-
-        for tx in unspent_TXs {
-            for index in 0..tx.vout.len() {
-                if tx.vout[index].can_be_unlock_with(address) && accumulated < amount {
-                    match unspent_outputs.get_mut(&tx.id) {
-                        Some(v) => v.push(index as i32),
-                        None => {
-                            unspent_outputs.insert(tx.id.clone(), vec![index as i32]);
-                        }
-                    }
-                    accumulated += tx.vout[index].value;
-
-                    if accumulated >= amount {
-                        return (accumulated, unspent_outputs);
-                    }
-                }
-            }
-        }
-        (accumulated, unspent_outputs)
-    }
-
-    pub fn add_block(&mut self, transaction: Vec<Transaction>) -> Result<()> {
+    pub fn add_block(&mut self, transaction: Vec<Transaction>) -> Result<Block> {
         let lasthash = self.db.get("LAST")?.unwrap();
         let new_block = Block::new_block(
             transaction,
@@ -210,7 +186,7 @@ impl Blockchain {
             .insert(new_block.get_hash(), bincode::serialize(&new_block)?)?;
         self.db.insert("LAST", new_block.get_hash().as_bytes())?;
         self.current_hash = new_block.get_hash();
-        Ok(())
+        Ok(new_block)
     }
 }
 

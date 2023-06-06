@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+use std::vec;
+
+use log::info;
+
 use crate::block::{self, Block};
 use crate::blockchain::Blockchain;
 use crate::errors::Result;
@@ -12,7 +17,9 @@ pub struct UTXOSet {
 impl UTXOSet {
     // Reindex rebuilds the UTXO set
     pub fn reindex(&self) -> Result<()> {
-        std::fs::remove_dir("data/utxos")?;
+        if let Err(e) = std::fs::remove_dir_all("data/utxos") {
+            info!("there are no utxos to delete")
+        }
         let db = sled::open("data/utxos")?;
 
         let utxos = self.blockchain.find_UTXO();
@@ -36,7 +43,7 @@ impl UTXOSet {
                     let mut update_outputs = TXOutputs {
                         outputs: Vec::new(),
                     };
-                    let outs: TXOutputs = bincode::deserialize(&db.get(&vin.txid)?.unwrap());
+                    let outs: TXOutputs = bincode::deserialize(&db.get(&vin.txid)?.unwrap())?;
                     for out_idx in 0..outs.outputs.len() {
                         if out_idx != vin.vout as usize {
                             update_outputs.outputs.push(outs.outputs[out_idx].clone());
@@ -46,7 +53,7 @@ impl UTXOSet {
                     if update_outputs.outputs.is_empty() {
                         db.remove(&vin.txid)?;
                     } else {
-                        db.insert(vin.txid.as_bytes(), bincode::serialize(&update_outputs))
+                        db.insert(vin.txid.as_bytes(), bincode::serialize(&update_outputs)?)?;
                     }
                 }
             }
@@ -71,5 +78,53 @@ impl UTXOSet {
             counter += 1;
         }
         Ok(counter)
+    }
+
+    pub fn find_spendable_outputs(
+        &self,
+        address: &[u8],
+        amount: i32,
+    ) -> Result<(i32, HashMap<String, Vec<i32>>)> {
+        let mut unspent_outputs: HashMap<String, Vec<i32>> = HashMap::new();
+        let mut accumulated = 0;
+        let db = sled::open("data/utxo")?;
+        for kv in db.iter() {
+            let (k, v) = kv?;
+            let txid = String::from_utf8(k.to_vec())?;
+            let outs: TXOutputs = bincode::deserialize(&v.to_vec())?;
+
+            for out_idx in 0..outs.outputs.len() {
+                if outs.outputs[out_idx].can_be_unlock_with(address) && accumulated < amount {
+                    accumulated += outs.outputs[out_idx].value;
+                    match unspent_outputs.get_mut(&txid) {
+                        Some(v) => v.push(out_idx as i32),
+                        None => {
+                            unspent_outputs.insert(txid.clone(), vec![out_idx as i32]);
+                        }
+                    }
+                }
+            }
+        }
+        Ok((accumulated, unspent_outputs))
+    }
+
+    // Find UTXO finds the UTXO for a public key hash
+    pub fn find_UTXO(&self, pub_key_hash: &[u8]) -> Result<TXOutputs> {
+        let mut utxos = TXOutputs {
+            outputs: Vec::new(),
+        };
+        let db = sled::open("data/utxos")?;
+
+        for kv in db.iter() {
+            let (_, v) = kv?;
+            let outs: TXOutputs = bincode::deserialize(&v.to_vec())?;
+
+            for out in outs.outputs {
+                if out.can_be_unlock_with(pub_key_hash) {
+                    utxos.outputs.push(out.clone())
+                }
+            }
+        }
+        Ok(utxos)
     }
 }
