@@ -21,23 +21,63 @@ cargo build
 
 ## Usage
 
-Currently, this project contains a test module that demonstrates the basic functionality of the blockchain.
+The entry point for this application is the `cargo run` command.
 
-You can run this test using the command:
+## Commands
 
-You can create a block and add blocks by using
+The following commands are available in the CLI:
 
-```bash
-cargo run addblock <DATA>
-```
+1. **printchain**: This command prints all the chain blocks. Usage:
 
-You can print all the blocks of the blockchain by using
+   ```
+   cargo run  printchain
+   ```
 
-```bash
-cargo run printchain
-```
+2. **getbalance**: This command retrieves the balance of a given address in the blockchain. Usage:
 
-This will create a new blockchain, add a few blocks to it, and print out the blockchain's state.
+   ```
+   cargo run  getbalance [ADDRESS]
+   ```
+
+   Replace `[ADDRESS]` with the address you want to retrieve the balance for.
+
+3. **create**: This command creates a new blockchain and sends the genesis block reward to the specified address. Usage:
+
+   ```
+   cargo run  create [ADDRESS]
+   ```
+
+   Replace `[ADDRESS]` with the address where you want to send the genesis block reward.
+
+4. **send**: This command sends an amount from one wallet to another in the blockchain. Usage:
+
+   ```
+   cargo run  send [FROM] [TO] [AMOUNT]
+   ```
+
+   Replace `[FROM]` with the source wallet address, `[TO]` with the destination wallet address, and `[AMOUNT]` with the amount to send.
+
+5. **createwallet**: This command creates a new wallet. Usage:
+
+   ```
+   cargo run  createwallet
+   ```
+
+6. **listaddresses**: This command lists all wallet addresses. Usage:
+
+   ```
+   cargo run  listaddresses
+   ```
+
+7. **reindex**: This command reindexes the UTXOSet. Usage:
+
+   ```
+   cargo run  reindex
+   ```
+
+## Error Handling
+
+If an error occurs while executing any of the commands, the program will display a descriptive error message and exit with status 1.
 
 ## Understanding the Code
 
@@ -56,3 +96,15 @@ Here is a brief overview of the important parts of the code:
 - `Blockchain::add_block`: This function adds a block with given data to the blockchain.
 
 The `tests` module contains a simple test that demonstrates creating a blockchain and adding blocks to it.
+
+## Author
+
+Deepak Komma (deepakkomma@gmail.com)
+
+## Version
+
+0.1
+
+-
+
+This README is always evolving. If you think it's missing something crucial, please don't hesitate to suggest improvements.

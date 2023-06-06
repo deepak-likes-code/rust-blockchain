@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-
-use failure::format_err;
-use log::info;
-use sha2::digest::typenum::private::PrivateInvert;
-
 use crate::block::{Block, TARGET_HEX};
 use crate::errors::Result;
 use crate::transaction::Transaction;
-use crate::txn::TXOutput;
+use crate::txn::TXOutputs;
+use failure::format_err;
+use log::info;
+use std::collections::HashMap;
 
 const GENESIS_COINBASE_DATA: &str =
     "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
@@ -42,6 +39,11 @@ impl Blockchain {
 
     pub fn create_blockchain(address: String) -> Result<Blockchain> {
         info!("Creating new blockchain");
+
+        if let Err(e) = std::fs::remove_dir_all("data/blocks") {
+            info!("There exists no blocks to delete")
+        }
+
         let db = sled::open("data/blocks")?;
         info!("Creating new block database");
         let cbtx = Transaction::new_coinbase(address, String::from(GENESIS_COINBASE_DATA))?;
@@ -100,14 +102,41 @@ impl Blockchain {
         unspent_TXs
     }
 
-    pub fn find_UTXO(&self, address: &[u8]) -> Vec<TXOutput> {
-        let mut utxos = Vec::<TXOutput>::new();
-        let unspent_TXs = self.find_unspent_transaction(address);
+    pub fn find_UTXO(&self) -> HashMap<String, TXOutputs> {
+        let mut utxos: HashMap<String, TXOutputs> = HashMap::new();
+        let mut spent_txo: HashMap<String, Vec<i32>> = HashMap::new();
 
-        for tx in unspent_TXs {
-            for out in &tx.vout {
-                if out.can_be_unlock_with(address) {
-                    utxos.push(out.clone())
+        for block in self.iter() {
+            for tx in block.get_transaction() {
+                for index in 0..tx.vout.len() {
+                    if let Some(ids) = spent_txo.get(&tx.id) {
+                        if ids.contains(&(index as i32)) {
+                            continue;
+                        }
+                    }
+
+                    match utxos.get_mut(&tx.id) {
+                        Some(v) => v.outputs.push(tx.vout[index].clone()),
+
+                        None => {
+                            utxos.insert(
+                                tx.id.clone(),
+                                TXOutputs {
+                                    outputs: vec![tx.vout[index].clone()],
+                                },
+                            );
+                        }
+                    }
+                }
+                if !tx.is_coinbase() {
+                    for i in &tx.vin {
+                        match spent_txo.get_mut(&i.txid) {
+                            Some(v) => v.push(i.vout),
+                            None => {
+                                spent_txo.insert(i.txid.clone(), vec![i.vout]);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -146,36 +175,7 @@ impl Blockchain {
         tx.verify(prev_TXs)
     }
 
-    pub fn find_spendable_outputs(
-        &self,
-        address: &[u8],
-        amount: i32,
-    ) -> (i32, HashMap<String, Vec<i32>>) {
-        let mut unspent_outputs: HashMap<String, Vec<i32>> = HashMap::new();
-        let mut accumulated = 0;
-        let unspent_TXs = self.find_unspent_transaction(address);
-
-        for tx in unspent_TXs {
-            for index in 0..tx.vout.len() {
-                if tx.vout[index].can_be_unlock_with(address) && accumulated < amount {
-                    match unspent_outputs.get_mut(&tx.id) {
-                        Some(v) => v.push(index as i32),
-                        None => {
-                            unspent_outputs.insert(tx.id.clone(), vec![index as i32]);
-                        }
-                    }
-                    accumulated += tx.vout[index].value;
-
-                    if accumulated >= amount {
-                        return (accumulated, unspent_outputs);
-                    }
-                }
-            }
-        }
-        (accumulated, unspent_outputs)
-    }
-
-    pub fn add_block(&mut self, transaction: Vec<Transaction>) -> Result<()> {
+    pub fn add_block(&mut self, transaction: Vec<Transaction>) -> Result<Block> {
         let lasthash = self.db.get("LAST")?.unwrap();
         let new_block = Block::new_block(
             transaction,
@@ -186,7 +186,7 @@ impl Blockchain {
             .insert(new_block.get_hash(), bincode::serialize(&new_block)?)?;
         self.db.insert("LAST", new_block.get_hash().as_bytes())?;
         self.current_hash = new_block.get_hash();
-        Ok(())
+        Ok(new_block)
     }
 }
 

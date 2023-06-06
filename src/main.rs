@@ -4,6 +4,7 @@ pub mod cli;
 pub mod errors;
 pub mod transaction;
 pub mod txn;
+pub mod utxoset;
 pub mod wallet;
 
 use errors::Result;

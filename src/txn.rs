@@ -3,6 +3,12 @@ use bitcoincash_addr::Address;
 use log::debug;
 use serde::{Deserialize, Serialize};
 
+// TXOutputs collects the TXOutput
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TXOutputs {
+    pub outputs: Vec<TXOutput>,
+}
+
 // TXInput represents a transaction input
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TXInput {
