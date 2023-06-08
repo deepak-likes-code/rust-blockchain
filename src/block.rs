@@ -6,10 +6,27 @@ use colored::*;
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 use log::{debug, info};
+use merkle_cbt::merkle_tree::{Merge, CBMT};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 pub const TARGET_HEX: usize = 4;
+
+struct MergeTX {}
+
+impl Merge for MergeTX {
+    type Item = Vec<u8>;
+
+    fn merge(left: &Self::Item, right: &Self::Item) -> Self::Item {
+        let mut hasher = Sha256::new();
+        let mut data = left.clone();
+        data.append(&mut right.clone());
+        hasher.input(&data);
+        let mut re: [u8; 32] = [0; 32];
+        hasher.result(&mut re);
+        re.to_vec()
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
@@ -48,6 +65,15 @@ impl Block {
         self.hash.clone()
     }
 
+    fn hash_transactions(&self) -> Result<Vec<u8>> {
+        let mut transactions = Vec::new();
+        for tx in &self.transactions {
+            transactions.push(tx.clone().hash()?.as_bytes().to_owned());
+        }
+        let merkle_tree = CBMT::<Vec<u8>, MergeTX>::build_merkle_tree(&*transactions);
+        Ok(merkle_tree.root())
+    }
+
     pub fn get_prev_hash(&self) -> String {
         self.prev_block_hash.clone()
     }
@@ -67,7 +93,7 @@ impl Block {
     fn prepare_hash_data(&self) -> Result<Vec<u8>> {
         let content = (
             self.prev_block_hash.clone(),
-            self.transactions.clone(),
+            self.hash_transactions()?,
             self.timestamp,
             TARGET_HEX,
             self.nonce,
