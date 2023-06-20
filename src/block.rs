@@ -31,7 +31,7 @@ impl Merge for MergeTX {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
     nonce: u32,
-    height: usize,
+    height: i32,
     timestamp: u128,
     hash: String,
     prev_block_hash: String,
@@ -42,7 +42,7 @@ impl Block {
     pub fn new_block(
         data: Vec<Transaction>,
         prev_block_hash: String,
-        height: usize,
+        height: i32,
     ) -> Result<Block> {
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)?
@@ -63,6 +63,10 @@ impl Block {
 
     pub fn get_hash(&self) -> String {
         self.hash.clone()
+    }
+
+    pub fn get_height(&self) -> i32 {
+        self.height
     }
 
     fn hash_transactions(&self) -> Result<Vec<u8>> {
