@@ -2,6 +2,7 @@ pub mod block;
 pub mod blockchain;
 pub mod cli;
 pub mod errors;
+mod server;
 pub mod transaction;
 pub mod txn;
 pub mod utxoset;
